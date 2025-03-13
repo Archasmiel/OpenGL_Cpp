@@ -1,74 +1,80 @@
 #include <stdio.h>
-#include <GL/glew.h>      
-#include <GLFW/glfw3.h>
+#include <GL/glew.h>      // Підключення GLEW для управління розширеннями OpenGL
+#include <GLFW/glfw3.h>   // Підключення GLFW для створення вікон та обробки вводу
 
-// Розміри вікна
-const GLint WIDTH = 800, HEIGHT = 600;
+const GLint WIDTH = 800;   // Ширина вікна
+const GLint HEIGHT = 600;  // Висота вікна
 
 int main()
 {
     // Ініціалізація GLFW
-    if (!glfwInit()) {
-        printf("GLFW init failed");
+    if (glfwInit() == GL_FALSE) { // Перевірка, чи вдалося ініціалізувати GLFW
+        printf("GLFW init fail");
         glfwTerminate();
         return 1;
     }
 
-    /// Настройки вікна
-    // Головна частина MAJOR версії 3.X та "мала" частина MINOR Х.3, разом 3.3
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // Немає ніяких старих залежностей (deprecated) та дозволити нові залежності нових версій
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
+    /// Налаштування GLFW
+    // Визначення версії OpenGL (3.3)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // Велика версія (major)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // Маленька версія (minor)
+
+    // Використання тільки сучасного (core) профілю OpenGL
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    // Дозволяє використання майбутніх версій OpenGL (для macOS)
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    // Створення вікна (посилання на нього - символ *)
-    GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
-    if (!mainWindow) {
-        printf("GLFW window creation failed");
+    // Створення вікна GLFW (посилання на нього зберігається у змінній window)
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", NULL, NULL);
+    if (!window) {  // Перевірка, чи вдалося створити вікно
+        printf("Window creation fail");
+        glfwTerminate();
+        return 1;
     }
 
-    // Отримати розміри буфера кадрів з вікна
-    // для правильного встановлення області перегляду (буде далі)
-    int bufferWidth, bufferHeight;
-    glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
-        // &bufferWidth - дозволяє передати змінну напряму і перезаписувати (reference)
-        // якщо не додати '&', буде робити копію і міняти далі її
+    // Отримання фактичного розміру буфера кадру (framebuffer) в пікселях
+    int bufWidth, bufHeight;
+    glfwGetFramebufferSize(window, &bufWidth, &bufHeight);
 
-    // Зробити вікно головним
-    glfwMakeContextCurrent(mainWindow);
+    // Встановлення контексту OpenGL для створеного вікна
+    glfwMakeContextCurrent(window);
 
-    // Дозволити експериментальні(нові) властивості вікна
+    // Дозвіл на використання експериментальних функцій GLEW
     glewExperimental = GL_TRUE;
 
-    // Перевірка чи менеджер вікон GLEW запустився, не видає Bool
-    if (glewInit() != GLEW_OK) {
-        printf("GLEW init failed");
-        glfwDestroyWindow(mainWindow);
+    /// Ініціалізація GLEW
+    if (glewInit() != GLEW_OK) {  // Перевірка, чи вдалося ініціалізувати GLEW
+        printf("GLEW not init");
+        glfwDestroyWindow(window);
         glfwTerminate();
+        return 1;
     }
 
-    // для правильного встановлення області перегляду
-    glViewport(0, 0, bufferWidth, bufferHeight);
+    // Встановлення області перегляду (viewport) на весь розмір буфера кадру
+    glViewport(0, 0, bufWidth, bufHeight);
 
-    // Головний цикл вікна
-    while (!glfwWindowShouldClose(mainWindow)) {
-        // отримати всі введення користувача (мишка, клавіатура)
+    //
+    while (!glfwWindowShouldClose(window)) {  // Головний цикл програми
+        // Оновлення подій (клавіатура, миша тощо)
         glfwPollEvents();
 
-        // Очистка (зафарбування всього буферу) одним кольором
-        glClearColor(1.0f, 0.0f, 1.0f, 1.0f);   // R G B Alpha  [0f, 1f]  float
-        glClear(GL_COLOR_BUFFER_BIT);  // спеціальне значення
-            /*
-               GL_COLOR_BUFFER_BIT - очищає буфер кольору, видаляючи попередній кадр
-               GL_DEPTH_BUFFER_BIT - очищає буфер глибини, 
-                запобігаючи некоректному порядку рендерингу
-               GL_STENCIL_BUFFER_BIT - очищає буфер-трафарет (маска), який 
-                використовується для маскування (ховання) деяких областей рендерингу
-            */
+        // Очищення екрану кольором (GLclampf - значення у діапазоні [0,1])
+        glClearColor(1.0f, 0.0f, 1.0f, 1.0f); // Червоний, Зелений, Синій, Прозорість (RGBA)
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        glfwSwapBuffers(mainWindow);  // замінити кадр у вікні на буфер в якому малювали
+        /*
+            GL_COLOR_BUFFER_BIT - очищує буфер кольору (видаляє попередній кадр)
+            GL_DEPTH_BUFFER_BIT - очищує буфер глибини (для коректного відображення 3D-об'єктів)
+            GL_STENCIL_BUFFER_BIT - очищує буфер трафарету (використовується для маскування областей)
+        */
+
+        // Заміна переднього буфера (front) на задній (back), щоб відобразити новий кадр
+        glfwSwapBuffers(window);
     }
 
+    // Знищення вікна та завершення роботи GLFW
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }

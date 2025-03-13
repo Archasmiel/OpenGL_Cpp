@@ -3,8 +3,8 @@
 #include <GL/glew.h>      
 #include <GLFW/glfw3.h>
 
-// Vertex shader: Transforms vertex positions to clip space
-// Note: 'in' denotes input to the shader, not a variable inside a struct
+// Вершинний шейдер: перетворює позиції вершин у кліп-простір
+// Примітка: 'in' означає вхідний параметр у шейдері, а не змінну всередині структури
 static const char* vShader = "                              \n\
 #version 330                                                \n\
                                                             \n\
@@ -14,7 +14,7 @@ void main() {                                               \n\
 }                                                           \n\
 ";
 
-// Fragment shader: Sets the output color of each pixel
+// Фрагментний шейдер: задає вихідний колір кожного пікселя
 static const char* fShader = "                              \n\
 #version 330                                                \n\
                                                             \n\
@@ -37,8 +37,8 @@ struct DrawData {
 const GLint WIDTH = 800, HEIGHT = 600;
 
 GLfloat triangle1[] = {
-    -1.0f, -1.0f, 0.0f,
-     1.0f, -1.0f, 0.0f,  // Adjusted for visibility (was 0.1f)
+    -0.2f, -0.2f, 0.0f,
+     0.2f, -0.2f, 0.0f,
      0.0f,  1.0f, 0.0f,
 };
 
@@ -48,15 +48,15 @@ void CreateTriangle(DrawData& d, GLfloat vertices[], GLsizei vertexCount) {
 
     glGenBuffers(1, &d.VBO);
     glBindBuffer(GL_ARRAY_BUFFER, d.VBO);
-    // Pass the total size of the vertex data (number of floats * size of float)
+    // Передача повного розміру масиву вершин (кількість float * розмір float)
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
-    // first 0: attribute location in shader (matches layout in vShader)
-    // 3: number of components per vertex (x, y, z)
-    // GL_FLOAT: data type of each component
-    // GL_FALSE: no normalization of values
-    // second 0: stride (0 means tightly packed data)
-    // third 0: offset from start of buffer (no offset here)
+    // перший 0: номер атрибута у шейдері (відповідає layout у vShader)
+    // 3: кількість компонент на вершину (x, y, z)
+    // GL_FLOAT: тип даних кожного компонента
+    // GL_FALSE: не нормалізувати значення
+    // другий 0: крок між вершинами (0 означає щільне зберігання)
+    // третій 0: зміщення від початку буфера (немає зміщення)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
@@ -79,18 +79,18 @@ void AddShader(GLuint programId, const char* code, GLenum type) {
     GLint result = 0;
     GLchar errorLog[1024] = { 0 };
 
-    // Check compilation status of the shader (not the program)
-    // shaderId is the local shader object, not the final program
+    // Перевірка статусу компіляції шейдера (не програми)
+    // shaderId — це окремий шейдер, а не фінальна програма
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &result);
     if (!result) {
         glGetShaderInfoLog(shaderId, sizeof(errorLog), NULL, errorLog);
-        printf("Shader '%d' compile error: '%s'\n", type, errorLog);
+        printf("Помилка компіляції шейдера '%d': '%s'\n", type, errorLog);
         glDeleteShader(shaderId);
         return;
     }
 
     glAttachShader(programId, shaderId);
-    // Clean up shader object after attaching to program (no longer needed)
+    // Видаляємо шейдер після додавання до програми (він більше не потрібен)
     glDeleteShader(shaderId);
 }
 
@@ -98,7 +98,7 @@ void CompileShaders(ShaderData& d) {
     GLuint shader = glCreateProgram();
 
     if (!shader) {
-        printf("No shader program created!\n");
+        printf("Не вдалося створити шейдерну програму!\n");
         return;
     }
 
@@ -108,22 +108,22 @@ void CompileShaders(ShaderData& d) {
     GLint result = 0;
     GLchar errorLog[1024] = { 0 };
 
-    // Link the vertex and fragment shaders into a single program
+    // Лінкуємо вершиний і фрагментний шейдери в єдину програму
     glLinkProgram(shader);
     glGetProgramiv(shader, GL_LINK_STATUS, &result);
     if (!result) {
         glGetProgramInfoLog(shader, sizeof(errorLog), NULL, errorLog);
-        printf("Shader link error: '%s'\n", errorLog);
+        printf("Помилка лінкування шейдерів: '%s'\n", errorLog);
         glDeleteProgram(shader);
         return;
     }
 
-    // Validate the program to ensure it can run in the current OpenGL state
+    // Перевіряємо, чи може програма працювати в поточному стані OpenGL
     glValidateProgram(shader);
     glGetProgramiv(shader, GL_VALIDATE_STATUS, &result);
     if (!result) {
         glGetProgramInfoLog(shader, sizeof(errorLog), NULL, errorLog);
-        printf("Shader validate error: '%s'\n", errorLog);
+        printf("Помилка валідації шейдера: '%s'\n", errorLog);
         glDeleteProgram(shader);
         return;
     }
@@ -133,7 +133,7 @@ void CompileShaders(ShaderData& d) {
 
 int main() {
     if (!glfwInit()) {
-        printf("GLFW init failed\n");
+        printf("Не вдалося ініціалізувати GLFW\n");
         glfwTerminate();
         return 1;
     }
@@ -143,9 +143,9 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
+    GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", NULL, NULL);
     if (!mainWindow) {
-        printf("GLFW window creation failed\n");
+        printf("Не вдалося створити вікно GLFW\n");
         glfwTerminate();
         return 1;
     }
@@ -157,7 +157,7 @@ int main() {
     glewExperimental = GL_TRUE;
 
     if (glewInit() != GLEW_OK) {
-        printf("GLEW init failed\n");
+        printf("Не вдалося ініціалізувати GLEW\n");
         glfwDestroyWindow(mainWindow);
         glfwTerminate();
         return 1;
@@ -172,7 +172,7 @@ int main() {
 
     DrawData dd1;
     dd1.shader = sd1.shader;
-    CreateTriangle(dd1, triangle1, 9);  // 9 floats = 3 vertices * 3 coords
+    CreateTriangle(dd1, triangle1, 9);  // 9 float = 3 вершини * 3 координати
 
     while (!glfwWindowShouldClose(mainWindow)) {
         glfwPollEvents();
@@ -191,7 +191,7 @@ int main() {
         glfwSwapBuffers(mainWindow);
     }
 
-    // Clean up OpenGL resources to avoid memory leaks
+    // Очищення ресурсів OpenGL, щоб уникнути витоку пам'яті
     glDeleteVertexArrays(1, &dd1.VAO);
     glDeleteBuffers(1, &dd1.VBO);
     glDeleteProgram(dd1.shader);
