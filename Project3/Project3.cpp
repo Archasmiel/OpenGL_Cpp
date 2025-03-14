@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <cmath>
 
 #include <GL/glew.h>      
 #include <GLFW/glfw3.h>
@@ -7,18 +8,28 @@
 const GLint WIDTH = 800, HEIGHT = 600;
 GLuint VAO, VBO, shaderId;
 
-// Вершинний шейдер: перетворює позиції вершин у кліп-простір
-// Примітка: 'in' означає вхідний параметр у шейдері, а не змінну всередині структури
+GLuint uniformXMove, uniformYMove;
+bool directionX = true; 
+bool directionY = true;
+float triOffsetX = 0.0f;
+float triOffsetY = 0.0f;
+float triMaxOffsetX = 0.90f;
+float triMaxOffsetY = 0.90f;
+float triIncrementX = 0.001f;
+float triIncrementY = 0.005f;
+
 static const char* vShader = "                              \n\
 #version 330                                                \n\
                                                             \n\
 layout (location = 0) in vec3 pos;                          \n\
+uniform float xMove;                                        \n\
+uniform float yMove;                                        \n\
+                                                            \n\
 void main() {                                               \n\
-  gl_Position = vec4(1.0*pos.x, 1.0*pos.y, pos.z, 1.0);     \n\
+  gl_Position = vec4(1.0*pos.x + xMove, 1.0*pos.y + yMove, pos.z, 1.0);     \n\
 }                                                           \n\
 ";
 
-// Фрагментний шейдер: задає вихідний колір кожного пікселя
 static const char* fShader = "                              \n\
 #version 330                                                \n\
                                                             \n\
@@ -29,9 +40,9 @@ void main() {                                               \n\
 ";
 
 GLfloat triangle1[] = {
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-     0.0f,  0.5f, 0.0f,
+    -0.1f, -0.1f, 0.0f,
+     0.1f, -0.1f, 0.0f,
+     0.0f,  0.1f, 0.0f,
 };
 
 void CreateTriangle(GLfloat vertices[], GLsizei vertexCount) {
@@ -41,15 +52,7 @@ void CreateTriangle(GLfloat vertices[], GLsizei vertexCount) {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    // Передача повного розміру масиву вершин (кількість float * розмір float)
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
-
-    // перший 0: номер атрибута у шейдері (відповідає layout у vShader)
-    // 3: кількість компонент на вершину (x, y, z)
-    // GL_FLOAT: тип даних кожного компонента
-    // GL_FALSE: не нормалізувати значення
-    // другий 0: крок між вершинами (0 означає щільне зберігання)
-    // третій 0: зміщення від початку буфера (немає зміщення)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glEnableVertexAttribArray(0);
@@ -120,6 +123,9 @@ void CompileShaders() {
         glDeleteProgram(shaderId);
         return;
     }
+
+    uniformXMove = glGetUniformLocation(shaderId, "xMove");
+    uniformYMove = glGetUniformLocation(shaderId, "yMove");
 }
 
 int main() {
@@ -162,13 +168,32 @@ int main() {
     while (!glfwWindowShouldClose(mainWindow)) {
         glfwPollEvents();
 
+        if (directionX) triOffsetX += triIncrementX;
+        else triOffsetX -= triIncrementX;
+
+        if (directionY) triOffsetY += triIncrementY;
+        else triOffsetY -= triIncrementY;
+
+        if (abs(triOffsetX) >= triMaxOffsetX) 
+            directionX = !directionX;
+        if (abs(triOffsetY) >= triMaxOffsetY)
+            directionY = !directionY;
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderId);
+        glUniform1f(uniformXMove, triOffsetX);
+        glUniform1f(uniformYMove, triOffsetY);
+
         glBindVertexArray(VAO);
+        // теж працює, але поки не запустили glDrawArrays
+        // glUniform1f(uniformXMove, triOffsetX);
+        // glUniform1f(uniformYMove, triOffsetY);
+        
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
+
         glUseProgram(0);
 
         glfwSwapBuffers(mainWindow);
@@ -183,4 +208,3 @@ int main() {
 
     return 0;
 }
-
