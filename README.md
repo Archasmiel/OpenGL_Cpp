@@ -1,9 +1,9 @@
 # OpenGL_Cpp
 
-Цей репозиторій містить кілька проєктів з використанням OpenGL з C++.
+This repo holds a few OpenGL C++ projects. 
 
 ## Зміст
 
-- Проєкт 1: Основи OpenGL
-- Проєкт 2: Рендеринг трикутника
-- Проєкт 2: uniform-змінні
+- Project 1: OpenGL basics
+- Project 2: Shaders introduction 
+- Project 3: Uniform variables
