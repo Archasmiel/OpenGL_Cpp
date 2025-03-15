@@ -87,7 +87,7 @@ void AddShader(GLuint shaderId, const char* code, GLenum type) {
     glDeleteShader(subShaderId);
 }
 
-void CompileShaders() {
+void CompileShaders(GLuint &shaderId, const char* vert, const char* frag) {
     shaderId = glCreateProgram();
 
     if (!shaderId) {
@@ -95,8 +95,8 @@ void CompileShaders() {
         return;
     }
 
-    AddShader(shaderId, vShader, GL_VERTEX_SHADER);
-    AddShader(shaderId, fShader, GL_FRAGMENT_SHADER);
+    AddShader(shaderId, vert, GL_VERTEX_SHADER);
+    AddShader(shaderId, frag, GL_FRAGMENT_SHADER);
 
     GLint result = 0;
     GLchar errorLog[1024] = { 0 };
@@ -156,7 +156,7 @@ int main() {
 
     glViewport(0, 0, bufferWidth, bufferHeight);
 
-    CompileShaders();
+    CompileShaders(shaderId, vShader, fShader);
     CreateTriangle(triangle1, 9);  // 9 float = 3 вершини * 3 координати
 
     while (!glfwWindowShouldClose(mainWindow)) {
