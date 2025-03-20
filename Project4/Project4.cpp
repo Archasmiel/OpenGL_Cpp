@@ -1,21 +1,22 @@
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <cmath>
-#include <ctime>
 
 #include <GL/glew.h>      
 #include <GLFW/glfw3.h>
 #include <glm/mat4x4.hpp>
 
-const GLint WIDTH = 800, HEIGHT = 600;
+#include "GameClock.h"
+#include "GameWindow.h"
+
+GLint WIDTH = 800, HEIGHT = 600;
+std::string title = "OpenGL Window";
+float FPS = 60.0f;
+
+GameWindow gameWindow(WIDTH, HEIGHT, title, FPS);
+GameClock gameClk(FPS);
+
 GLuint VAO, VBO, shaderId;
-
-// clock_t = long
-// CLOCKS_PER_SEC = clock_t { 1000 }
-const double fps = 60.0f;
-const clock_t CLOCKS_PER_FRAME = CLOCKS_PER_SEC / fps;  // не треба перетворювати в clock_t
-clock_t result, lastTime;
-
 GLuint uniformXMove, uniformYMove;
 bool directionX = true; 
 bool directionY = true;
@@ -23,8 +24,8 @@ float triOffsetX = 0.0f;
 float triOffsetY = 0.0f;
 float triMaxOffsetX = 0.90f;
 float triMaxOffsetY = 0.90f;
-float speedX = 0.001f;
-float speedY = 0.005f;
+float speedX = 0.5f;
+float speedY = 0.335f;
 
 static const char* vShader = "                              \n\
 #version 330                                                \n\
@@ -71,19 +72,15 @@ void CreateTriangle(GLfloat vertices[], GLsizei vertexCount) {
 void AddShader(GLuint &shaderId, const char* code, GLenum type) {
     GLuint subShaderId = glCreateShader(type);
 
-    // GLchar = char
     const GLchar* shaderCode[1];
     shaderCode[0] = code;
 
-    // GLint = int
     GLint codeLength[1];
     codeLength[0] = strlen(code);
 
     glShaderSource(subShaderId, 1, shaderCode, codeLength);
     glCompileShader(subShaderId);
 
-    // Перевірка статусу компіляції шейдера (vertex,fragment, a не програми)
-    // shaderId — це окремий шейдер, а не фінальна програма
     GLint result = 0;
     GLchar errorLog[1024] = { 0 };
 
@@ -96,7 +93,6 @@ void AddShader(GLuint &shaderId, const char* code, GLenum type) {
     }
 
     glAttachShader(shaderId, subShaderId);
-    // Видаляємо шейдер після додавання до програми (більше не потрібний)
     glDeleteShader(subShaderId);
 }
 
@@ -108,14 +104,12 @@ void CompileShaders(GLuint &shaderId, const char* vert, const char* frag) {
         return;
     }
 
-    // Збираємо вершиний і фрагментний шейдери в єдину програму
     AddShader(shaderId, vert, GL_VERTEX_SHADER);
     AddShader(shaderId, frag, GL_FRAGMENT_SHADER);
 
     GLint result = 0;
     GLchar errorLog[1024] = { 0 };
 
-    // Перевіряємо, чи лінковано до шейдеру
     glLinkProgram(shaderId);
     glGetProgramiv(shaderId, GL_LINK_STATUS, &result);
     if (!result) {
@@ -125,7 +119,6 @@ void CompileShaders(GLuint &shaderId, const char* vert, const char* frag) {
         return;
     }
 
-    // Перевіряємо, чи перевірилася програма
     glValidateProgram(shaderId);
     glGetProgramiv(shaderId, GL_VALIDATE_STATUS, &result);
     if (!result) {
@@ -140,97 +133,49 @@ void CompileShaders(GLuint &shaderId, const char* vert, const char* frag) {
 }
 
 int main() {
-    if (!glfwInit()) {
-        printf("Не вдалося ініціалізувати GLFW\n");
-        glfwTerminate();
-        return 1;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-    GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", NULL, NULL);
-    if (!mainWindow) {
-        printf("Не вдалося створити вікно GLFW\n");
-        glfwTerminate();
-        return 1;
-    }
-
-    int bufferWidth, bufferHeight;
-    glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
-
-    glfwMakeContextCurrent(mainWindow);
-    glewExperimental = GL_TRUE;
-
-    if (glewInit() != GLEW_OK) {
-        printf("Не вдалося ініціалізувати GLEW\n");
-        glfwDestroyWindow(mainWindow);
-        glfwTerminate();
-        return 1;
-    }
-
-    glViewport(0, 0, bufferWidth, bufferHeight);
+    gameWindow.init(NULL, NULL);
 
     CompileShaders(shaderId, vShader, fShader);
-    CreateTriangle(triangle1, 9);  // 9 float = 3 вершини * 3 координати
+    CreateTriangle(triangle1, 9);
 
-    // отримати перший раз, змінну останнього часу для таймера кадрів
-    lastTime = std::clock();
-
-    while (!glfwWindowShouldClose(mainWindow)) {
-        // перевірка поточного часу і запуск генерації кадру, якщо відповідає fps
-        result = std::clock();
-        if (result - lastTime < CLOCKS_PER_FRAME) {
-            continue;
-        }
-        lastTime = result;
+    while (!gameWindow.shouldClose()) {
+        if (gameClk.update()) continue;
 
         glfwPollEvents();
 
-        if (directionX) triOffsetX += speedX;
-        else triOffsetX -= speedX;
+        // Proper movement with deltaTime
+        if (directionX) triOffsetX += speedX * gameClk.getDeltaTime();
+        else triOffsetX -= speedX * gameClk.getDeltaTime();
 
-        if (directionY) triOffsetY += speedY;
-        else triOffsetY -= speedY;
+        if (directionY) triOffsetY += speedY * gameClk.getDeltaTime();
+        else triOffsetY -= speedY * gameClk.getDeltaTime();
 
         if (abs(triOffsetX) >= triMaxOffsetX) 
             directionX = !directionX;
         if (abs(triOffsetY) >= triMaxOffsetY)
             directionY = !directionY;
 
-        // очистка буфера кольору чорним кольором
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // uniform змінні передаються до програми-шейдеру тому першим має бути
-        // підгрузка його за айді-номером
         glUseProgram(shaderId);
         glBindVertexArray(VAO);
         
-        // працює, поки не запустили glDrawArrays
-        // тому що вся інформація збирається
-        // а на glDrawArrays вона виконується
         glUniform1f(uniformXMove, triOffsetX);
         glUniform1f(uniformYMove, triOffsetY);
         
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        // відв'язування шейдеру 
-        // 0 - відсутність програми або Vertex Array Object (VAO)
         glBindVertexArray(0);
         glUseProgram(0);
 
-        glfwSwapBuffers(mainWindow);
+        gameWindow.swapBuffers();
     }
 
-    // очищення ресурсів OpenGL, щоб уникнути витоку пам'яті
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderId);
-    glfwDestroyWindow(mainWindow);
-    glfwTerminate();
+    gameWindow.terminate();
 
     return 0;
 }

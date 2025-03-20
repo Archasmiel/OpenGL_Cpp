@@ -1,4 +1,4 @@
-# OpenGL_Cpp
+# OpenGL Cpp
 
 This repo holds a few OpenGL C++ projects. 
 
@@ -12,4 +12,5 @@ This repo holds a few OpenGL C++ projects.
 
 - Project 1: OpenGL basics
 - Project 2: Shaders introduction 
-- Project 3: Uniform variables
+- Project 3: Uniform variables / GLM
+- Project 4: Custom classes / Delta time
