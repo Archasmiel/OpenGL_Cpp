@@ -180,14 +180,14 @@ int main() {
     lastTime = std::clock();
 
     while (!glfwWindowShouldClose(mainWindow)) {
-        glfwPollEvents();
-
         // перевірка поточного часу і запуск генерації кадру, якщо відповідає fps
         result = std::clock();
         if (result - lastTime < CLOCKS_PER_FRAME) {
             continue;
         }
         lastTime = result;
+
+        glfwPollEvents();
 
         if (directionX) triOffsetX += triIncrementX;
         else triOffsetX -= triIncrementX;
